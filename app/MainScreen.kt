@@ -17,6 +17,52 @@ import androidx.navigation.NavController
 
 @Composable
 fun MainScreen(navController: NavController) {
+    val context = LocalContext.current
+    val cameraImageUri = remember { mutableStateOf<Uri?>(null) }
+    var showPhotoChoiceDialog by remember { mutableStateOf(false) }
+
+    var showNoteDialog by remember { mutableStateOf(false) }
+    var noteDialogText by remember { mutableStateOf("") }
+    var selectedPlaceForNote by remember { mutableStateOf<Place?>(null) }
+    var selectedPlaceForPhoto by remember { mutableStateOf<Place?>(null) } // ✅ BURADA
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            val index = MainActivity.savedPlaces.indexOf(selectedPlaceForPhoto)
+            if (index != -1) {
+                MainActivity.savedPlaces[index] =
+                    MainActivity.savedPlaces[index].copy(photoUri = it.toString())
+            }
+        }
+    }
+    if (showPhotoChoiceDialog && selectedPlaceForPhoto != null) {
+        AlertDialog(
+            onDismissRequest = { showPhotoChoiceDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    photoPickerLauncher.launch("image/*")
+                    showPhotoChoiceDialog = false
+                }) {
+                    Text("Choose from Gallery")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    val uri = createImageUri(context)
+                    cameraImageUri.value = uri
+                    cameraLauncher.launch(uri)
+                    showPhotoChoiceDialog = false
+                }) {
+                    Text("Take a Photo")
+                }
+            },
+            title = { Text("Select Photo") },
+            text = { Text("Choose photo source:") }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -69,5 +115,14 @@ fun MainScreen(navController: NavController) {
             }
         }
 
+    }
+}
+LaunchedEffect(Unit) {
+    val apiKey = "42931a168b4d428f900b6c8f5e6479ff" // 🔑 kendi key’in
+    val city = "Istanbul" // 💡 istersen dinamik yaparız
+
+    val places = GeoapifyService.getPlacesByCity(city, apiKey)
+    places.forEach {
+        println("📍 Geoapify result: $it")
     }
 }

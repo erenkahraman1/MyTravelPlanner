@@ -25,6 +25,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import java.io.File
+import androidx.core.content.FileProvider
 
 
 class MainActivity : ComponentActivity() {
@@ -62,9 +67,38 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen(navController: NavHostController) {
+    val context = LocalContext.current
+    val cameraImageUri = remember { mutableStateOf<Uri?>(null) }
+
     var showNoteDialog by remember { mutableStateOf(false) }
     var noteDialogText by remember { mutableStateOf("") }
     var selectedPlaceForNote by remember { mutableStateOf<Place?>(null) }
+
+    var selectedPlaceForPhoto by remember { mutableStateOf<Place?>(null) }
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            val index = MainActivity.savedPlaces.indexOf(selectedPlaceForPhoto)
+            if (index != -1) {
+                MainActivity.savedPlaces[index] =
+                    MainActivity.savedPlaces[index].copy(photoUri = it.toString())
+            }
+        }
+    }
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success: Boolean ->
+        if (success) {
+            cameraImageUri.value?.let { uri ->
+                val index = MainActivity.savedPlaces.indexOf(selectedPlaceForPhoto)
+                if (index != -1) {
+                    MainActivity.savedPlaces[index] =
+                        MainActivity.savedPlaces[index].copy(photoUri = uri.toString())
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -113,6 +147,16 @@ fun MainScreen(navController: NavHostController) {
                             expanded = expanded.value,
                             onDismissRequest = { expanded.value = false }
                         ) {
+
+                            DropdownMenuItem(
+                                text = { Text("Add Note") },
+                                onClick = {
+                                    noteDialogText = place.note ?: ""
+                                    selectedPlaceForNote = place
+                                    showNoteDialog = true
+                                    expanded.value = false
+                                }
+                            )
                             DropdownMenuItem(
                                 text = { Text("Show on Map") },
                                 onClick = {
@@ -121,28 +165,37 @@ fun MainScreen(navController: NavHostController) {
                                 }
                             )
                             DropdownMenuItem(
+                                text = { Text("Add Photo from Gallery") },
+                                onClick = {
+                                    selectedPlaceForPhoto = place
+                                    photoPickerLauncher.launch("image/*")
+                                    expanded.value = false
+                                }
+                            )
+                            /*DropdownMenuItem(
+                                text = { Text("Take Photo with Camera") },
+                                onClick = {
+                                    selectedPlaceForPhoto = place
+                                    val photoFile = File(context.cacheDir, "${place.name.replace(" ", "_")}_photo.jpg")
+                                    val photoUri = FileProvider.getUriForFile(
+                                        context,
+                                        "${context.packageName}.provider",
+                                        photoFile
+                                    )
+                                    cameraImageUri.value = photoUri
+                                    cameraLauncher.launch(photoUri)
+                                    expanded.value = false
+                                }
+                            ) */
+
+                            DropdownMenuItem(
                                 text = { Text("Delete") },
                                 onClick = {
                                     MainActivity.savedPlaces.remove(place)
                                     expanded.value = false
                                 }
                             )
-                            DropdownMenuItem(
-                                text = { Text("Add Photo") },
-                                onClick = {
-                                    // Henüz işlev eklenmedi, sonra yapılacak
-                                    expanded.value = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Add Note") },
-                                onClick = {
-                                    noteDialogText = place.note
-                                    selectedPlaceForNote = place
-                                    showNoteDialog = true
-                                    expanded.value = false
-                                }
-                            )
+
 
                         }
                     }
