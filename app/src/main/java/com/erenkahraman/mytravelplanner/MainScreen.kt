@@ -1,7 +1,5 @@
 package com.erenkahraman.mytravelplanner
 
-import android.content.Intent
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,10 +11,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+
 
 @Composable
-fun MainScreen(navController: NavController) {
+fun MainScreen(navController: NavHostController) {
     val context = LocalContext.current
     val cameraImageUri = remember { mutableStateOf<Uri?>(null) }
     var showPhotoChoiceDialog by remember { mutableStateOf(false) }
@@ -79,6 +78,16 @@ fun MainScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        LaunchedEffect(Unit) {
+            val apiKey = "42931a168b4d428f900b6c8f5e6479ff"
+            val city = "Istanbul"
+
+            val places = GeoapifyService.getPlacesByCity(city, apiKey)
+            places.forEach {
+                println("📍 Geoapify result: $it")
+            }
+        }
+
         LazyColumn {
             items(MainActivity.savedPlaces) { place ->
                 Card(
@@ -117,12 +126,4 @@ fun MainScreen(navController: NavController) {
 
     }
 }
-LaunchedEffect(Unit) {
-    val apiKey = "42931a168b4d428f900b6c8f5e6479ff" // 🔑 kendi key’in
-    val city = "Istanbul" // 💡 istersen dinamik yaparız
 
-    val places = GeoapifyService.getPlacesByCity(city, apiKey)
-    places.forEach {
-        println("📍 Geoapify result: $it")
-    }
-}
