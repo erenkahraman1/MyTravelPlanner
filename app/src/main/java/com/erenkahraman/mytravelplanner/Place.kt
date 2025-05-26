@@ -5,5 +5,7 @@ data class Place(
     val latitude: Double,
     val longitude: Double,
     val note: String? = null,
-    val photoUri: String? = null
+    val photoUri: String? = null,
+    val createdDate: String = ""
+
 )

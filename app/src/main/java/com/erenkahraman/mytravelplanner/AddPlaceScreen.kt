@@ -1,5 +1,7 @@
 package com.erenkahraman.mytravelplanner
 
+// AI assistance used for debugging UI issues and API integration guidance
+
 import com.erenkahraman.mytravelplanner.GeoapifyService
 import com.erenkahraman.mytravelplanner.GEOAPIFY_API_KEY
 import com.erenkahraman.mytravelplanner.Place
@@ -52,7 +54,6 @@ fun AddPlaceScreen(navController: NavHostController) {
     var poiList by remember { mutableStateOf(listOf<String>()) }
     var selectedPoi by remember { mutableStateOf("") }
 
-
     val countries = listOf("Turkey", "France", "Italy")
     val citiesMap = mapOf(
         "Turkey" to listOf("Istanbul", "Ankara", "Izmir"),
@@ -60,7 +61,6 @@ fun AddPlaceScreen(navController: NavHostController) {
         "Italy" to listOf("Rome", "Milan", "Florence"),
         "Latvia" to listOf("Riga", "Daugavpils", "Liepaja")
     )
-
     var searchResults by remember { mutableStateOf<List<String>>(emptyList()) }
     var selectedAddress by remember { mutableStateOf<String?>(null) }
     var useApiSearch by remember { mutableStateOf(false) }
@@ -91,7 +91,6 @@ fun AddPlaceScreen(navController: NavHostController) {
             }
         }
     }
-
 
     Scaffold(
         topBar = {
@@ -142,7 +141,6 @@ fun AddPlaceScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.height(16.dp))
 
             if (useApiSearch) {
-                // Step 1: Country Search
                 Text("Search Country")
                 OutlinedTextField(
                     value = countrySearchQuery,
@@ -162,7 +160,7 @@ fun AddPlaceScreen(navController: NavHostController) {
                 )
 
                 if (countryResults.isNotEmpty()) {
-                    println("Showing dropdown with ${countryResults.size} countries: $countryResults") // debug
+                    println("Showing dropdown with ${countryResults.size} countries: $countryResults")
                     DropdownMenuBox(
                         items = countryResults,
                         selectedItem = selectedCountryFromSearch.ifEmpty { "Select a country" },
@@ -210,7 +208,6 @@ fun AddPlaceScreen(navController: NavHostController) {
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                // Step 3: POI Search (only show if city is selected)
                 if (selectedCityFromSearch.isNotEmpty()) {
                     Text("Search Tourist Place in $selectedCityFromSearch")
                     OutlinedTextField(
@@ -239,10 +236,10 @@ fun AddPlaceScreen(navController: NavHostController) {
                                 placeName = selected
                                 poiResults = emptyList()
 
-                                // Get coordinates
                                 coroutineScope.launch {
                                     val coords = GeoapifyService.getCoordinatesForPlace(selected, GEOAPIFY_API_KEY)
                                     selectedLatLng = coords
+                                    println("POI coordinates: $coords")
                                 }
                             }
                         )
@@ -331,7 +328,8 @@ fun AddPlaceScreen(navController: NavHostController) {
                                     latitude = selectedLatLng.first,
                                     longitude = selectedLatLng.second,
                                     note = null,
-                                    photoUri = null
+                                    photoUri = null,
+                                    createdDate = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
                                 )
                             )
                         }

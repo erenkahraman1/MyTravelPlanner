@@ -1,5 +1,8 @@
 package com.erenkahraman.mytravelplanner
 
+// API integration methods developed with AI guidance for debugging
+// URL formatting and JSON parsing logic assisted by AI
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -32,16 +35,18 @@ object GeoapifyService {
         }
     }
 
-
     suspend fun getCoordinatesForPlace(place: String, apiKey: String): Pair<Double, Double> {
         return withContext(Dispatchers.IO) {
-            val encodedQuery = URLEncoder.encode(place, "UTF-8")
-            val url = "https://api.geoapify.com/v1/geocode/search?country=lv&type=city&limit=10&format=json&apiKey=42931a168b4d428f900b6c8f5e6479ff"
-
             try {
+                val encodedQuery = URLEncoder.encode(place, "UTF-8")
+                val url = "https://api.geoapify.com/v1/geocode/search?text=$encodedQuery&format=json&apiKey=$apiKey"
+
+                println("Coordinate API URL: $url")
+
                 val response = URL(url).readText()
                 val json = JSONObject(response)
                 val features = json.getJSONArray("results")
+
                 if (features.length() > 0) {
                     val location = features.getJSONObject(0)
                     val lat = location.getDouble("lat")
@@ -107,17 +112,26 @@ object GeoapifyService {
     suspend fun searchCitiesByCountry(countryName: String, cityQuery: String, apiKey: String): List<String> {
         return withContext(Dispatchers.IO) {
             try {
-                val encodedQuery = URLEncoder.encode("$cityQuery $countryName", "UTF-8")
-                val url = "https://api.geoapify.com/v1/geocode/search?text=$encodedQuery&type=city&limit=10&format=json&apiKey=$apiKey"
+                val encodedQuery = URLEncoder.encode(cityQuery, "UTF-8")
+                val url = "https://api.geoapify.com/v1/geocode/search?text=$encodedQuery&type=city&format=json&apiKey=$apiKey"
+
+                println("City API URL: $url")
 
                 val response = URL(url).readText()
                 val json = JSONObject(response)
-                val features = json.getJSONArray("features")
+                val features = json.getJSONArray("results")
 
-                List(features.length()) { i ->
-                    val properties = features.getJSONObject(i).getJSONObject("properties")
-                    properties.getString("city")
+                val cities = mutableListOf<String>()
+                for (i in 0 until features.length()) {
+                    val result = features.getJSONObject(i)
+                    val city = result.optString("city", "")
+                    val country = result.optString("country", "")
+
+                    if (city.isNotEmpty() && country.equals(countryName, ignoreCase = true)) {
+                        cities.add(city)
+                    }
                 }
+                cities.distinct().take(10)
             } catch (e: Exception) {
                 e.printStackTrace()
                 emptyList()
@@ -129,16 +143,27 @@ object GeoapifyService {
         return withContext(Dispatchers.IO) {
             try {
                 val encodedQuery = URLEncoder.encode("$poiQuery $cityName", "UTF-8")
-                val url = "https://api.geoapify.com/v1/geocode/search?text=$encodedQuery&type=poi&limit=10&format=json&apiKey=$apiKey"
+                val url = "https://api.geoapify.com/v1/geocode/search?text=$encodedQuery&format=json&apiKey=$apiKey"
+
+                println("POI API URL: $url")
 
                 val response = URL(url).readText()
                 val json = JSONObject(response)
-                val features = json.getJSONArray("features")
+                val features = json.getJSONArray("results")
 
-                List(features.length()) { i ->
-                    val properties = features.getJSONObject(i).getJSONObject("properties")
-                    properties.getString("name")
+                val pois = mutableListOf<String>()
+                for (i in 0 until features.length()) {
+                    val result = features.getJSONObject(i)
+                    val name = result.optString("name", "")
+                    val formatted = result.optString("formatted", "")
+
+                    if (name.isNotEmpty()) {
+                        pois.add(name)
+                    } else if (formatted.isNotEmpty()) {
+                        pois.add(formatted)
+                    }
                 }
+                pois.distinct().take(10)
             } catch (e: Exception) {
                 e.printStackTrace()
                 emptyList()
